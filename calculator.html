@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>電卓</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100dvh;
+    overflow: hidden;
+    font-family: -apple-system, 'Helvetica Neue', 'Hiragino Sans', sans-serif;
+    background: #f5f5f5;
+    color: #222;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 8px 8px 12px;
+    gap: 6px;
+  }
+
+  /* ===== ディスプレイ ===== */
+  .display {
+    background: #fff;
+    border-radius: 14px;
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-end;
+    min-height: 0;
+    flex: 0 0 auto;
+    border: 1px solid #e0e0e0;
+  }
+  .expression {
+    color: #999;
+    font-size: 0.85rem;
+    min-height: 1.2em;
+    word-break: break-all;
+  }
+  .result {
+    font-size: 2rem;
+    font-weight: 700;
+    word-break: break-all;
+    line-height: 1.2;
+  }
+
+  /* ===== メモリ ===== */
+  .memory {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+    flex: 0 0 auto;
+  }
+  .mem-slot {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 6px 4px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .mem-label {
+    font-size: 0.6rem;
+    color: #aaa;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .mem-value {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #222;
+    min-height: 1.3em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mem-value.empty { color: #ccc; font-weight: 400; }
+  .mem-actions {
+    display: flex;
+    gap: 3px;
+  }
+  .mem-actions button {
+    flex: 1;
+    padding: 4px 0;
+    font-size: 0.6rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .btn-s { background: #e8e8e8; color: #555; }
+  .btn-s:active { background: #ccc; }
+  .btn-l { background: #222; color: #fff; }
+  .btn-l:active { background: #555; }
+  .btn-x { background: #e8e8e8; color: #aaa; }
+  .btn-x:active { background: #ccc; }
+
+  /* ===== ボタン ===== */
+  .buttons {
+    flex: 1 1 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 6px;
+    min-height: 0;
+  }
+  .buttons button {
+    border: none;
+    border-radius: 12px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-num {
+    background: #fff;
+    color: #222;
+    border: 1px solid #e0e0e0;
+  }
+  .btn-num:active { background: #e0e0e0; }
+
+  .btn-op {
+    background: #222;
+    color: #fff;
+  }
+  .btn-op:active { background: #555; }
+
+  .btn-func {
+    background: #e8e8e8;
+    color: #555;
+  }
+  .btn-func:active { background: #ccc; }
+
+  .btn-eq {
+    background: #222;
+    color: #fff;
+  }
+  .btn-eq:active { background: #555; }
+
+  .btn-zero { grid-column: span 2; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ディスプレイ -->
+  <div class="display">
+    <div class="expression" id="expression"></div>
+    <div class="result" id="result">0</div>
+  </div>
+
+  <!-- メモリスロット 5つ -->
+  <div class="memory" id="memory"></div>
+
+  <!-- ボタン -->
+  <div class="buttons">
+    <button class="btn-func" onclick="clearAll()">AC</button>
+    <button class="btn-func" onclick="toggleSign()">+/−</button>
+    <button class="btn-func" onclick="inputPercent()">%</button>
+    <button class="btn-op"   onclick="inputOp('÷')">÷</button>
+
+    <button class="btn-num" onclick="inputNum('7')">7</button>
+    <button class="btn-num" onclick="inputNum('8')">8</button>
+    <button class="btn-num" onclick="inputNum('9')">9</button>
+    <button class="btn-op"  onclick="inputOp('×')">×</button>
+
+    <button class="btn-num" onclick="inputNum('4')">4</button>
+    <button class="btn-num" onclick="inputNum('5')">5</button>
+    <button class="btn-num" onclick="inputNum('6')">6</button>
+    <button class="btn-op"  onclick="inputOp('−')">−</button>
+
+    <button class="btn-num" onclick="inputNum('1')">1</button>
+    <button class="btn-num" onclick="inputNum('2')">2</button>
+    <button class="btn-num" onclick="inputNum('3')">3</button>
+    <button class="btn-op"  onclick="inputOp('+')">+</button>
+
+    <button class="btn-num btn-zero" onclick="inputNum('0')">0</button>
+    <button class="btn-num" onclick="inputDot()">.</button>
+    <button class="btn-eq"  onclick="calculate()">=</button>
+  </div>
+
+</div>
+
+<script>
+// ===== 電卓ロジック =====
+let cur = '0', prev = '', op = '', resetNext = false;
+const $ex = document.getElementById('expression');
+const $re = document.getElementById('result');
+const upd = () => $re.textContent = cur;
+
+function inputNum(n) {
+  if (resetNext) { cur = ''; resetNext = false; }
+  cur = (cur === '0' && n !== '.') ? n : cur + n;
+  upd();
+}
+function inputDot() {
+  if (resetNext) { cur = '0'; resetNext = false; }
+  if (!cur.includes('.')) cur += '.';
+  upd();
+}
+function inputOp(o) {
+  if (op && !resetNext) calculate(true);
+  prev = cur; op = o;
+  $ex.textContent = `${prev} ${op}`;
+  resetNext = true;
+}
+function calculate(chain = false) {
+  if (!op || prev === '') return;
+  const a = parseFloat(prev), b = parseFloat(cur);
+  let r;
+  switch (op) {
+    case '+': r = a + b; break;
+    case '−': r = a - b; break;
+    case '×': r = a * b; break;
+    case '÷': r = b !== 0 ? a / b : 'エラー'; break;
+  }
+  if (typeof r === 'number') r = parseFloat(r.toPrecision(12));
+  if (!chain) $ex.textContent = `${prev} ${op} ${cur} =`;
+  cur = String(r);
+  upd();
+  if (!chain) { op = ''; prev = ''; }
+  resetNext = true;
+}
+function clearAll() {
+  cur = '0'; prev = ''; op = ''; resetNext = false;
+  $ex.textContent = ''; upd();
+}
+function toggleSign() {
+  if (cur === '0') return;
+  cur = cur.startsWith('-') ? cur.slice(1) : '-' + cur;
+  upd();
+}
+function inputPercent() {
+  cur = String(parseFloat(cur) / 100); upd();
+}
+
+// キーボード
+document.addEventListener('keydown', e => {
+  if (e.key >= '0' && e.key <= '9') inputNum(e.key);
+  else if (e.key === '.') inputDot();
+  else if (e.key === '+') inputOp('+');
+  else if (e.key === '-') inputOp('−');
+  else if (e.key === '*') inputOp('×');
+  else if (e.key === '/') { e.preventDefault(); inputOp('÷'); }
+  else if (e.key === 'Enter' || e.key === '=') calculate();
+  else if (e.key === 'Escape') clearAll();
+  else if (e.key === 'Backspace') {
+    if (!resetNext && cur.length > 1) cur = cur.slice(0, -1);
+    else cur = '0';
+    upd();
+  }
+});
+
+// ===== メモリ =====
+const SLOTS = 5;
+let mem = JSON.parse(localStorage.getItem('cm') || 'null') || Array(SLOTS).fill(null);
+const saveMem = () => localStorage.setItem('cm', JSON.stringify(mem));
+
+function renderMem() {
+  const c = document.getElementById('memory');
+  c.innerHTML = '';
+  for (let i = 0; i < SLOTS; i++) {
+    const v = mem[i];
+    const d = document.createElement('div');
+    d.className = 'mem-slot';
+    d.innerHTML = `
+      <div class="mem-label">M${i + 1}</div>
+      <div class="mem-value ${v === null ? 'empty' : ''}">${v !== null ? v : '—'}</div>
+      <div class="mem-actions">
+        <button class="btn-s" onclick="mSave(${i})">保存</button>
+        <button class="btn-l" onclick="mLoad(${i})">呼出</button>
+        <button class="btn-x" onclick="mClr(${i})">✕</button>
+      </div>`;
+    c.appendChild(d);
+  }
+}
+function mSave(i) { const v = parseFloat(cur); if (!isNaN(v)) { mem[i] = v; saveMem(); renderMem(); } }
+function mLoad(i) { if (mem[i] === null) return; cur = String(mem[i]); resetNext = false; upd(); }
+function mClr(i)  { mem[i] = null; saveMem(); renderMem(); }
+
+renderMem();
+</script>
+</body>
+</html>
