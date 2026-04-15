@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.potatotto1030_png.twa",
+        "sha256_cert_fingerprints": ["11:34:0B:AA:CD:57:C2:B7:F2:8E:3E:61:63:22:BA:AD:58:FC:C1:31:0F:0B:73:51:D7:59:3A:7D:7C:1B:D3:E7"]
+      }
+    }]
